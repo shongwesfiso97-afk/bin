@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thuto - Nkangala TVET Master Portal</title>
+    <style>
+        :root {
+            --nkangala-blue: #0056b3;
+            --nkangala-gold: #ffca28;
+            --xp-green: #28a745;
+            --bg-gray: #f4f7f9;
+            --white: #ffffff;
+        }
+
+        body { font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; background-color: var(--bg-gray); margin: 0; display: flex; justify-content: center; padding: 20px; color: #333; }
+        .app-container { background: var(--white); width: 100%; max-width: 1200px; height: 850px; border-radius: 15px; box-shadow: 0 15px 50px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; }
+
+        /* --- HEADER & XP BAR --- */
+        .header { background: var(--nkangala-blue); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--nkangala-gold); }
+        .xp-container { text-align: right; min-width: 200px; }
+        .xp-bar-bg { background: rgba(255,255,255,0.2); height: 12px; border-radius: 6px; margin-top: 5px; overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
+        .xp-bar-fill { background: var(--nkangala-gold); height: 100%; width: 0%; transition: width 0.7s cubic-bezier(0.1, 0.7, 1.0, 0.1); }
+
+        /* --- NAVIGATION --- */
+        .nav-bar { display: none; background: #eee; border-bottom: 1px solid #ddd; }
+        .nav-item { padding: 15px 30px; cursor: pointer; font-weight: bold; color: #666; transition: 0.3s; }
+        .nav-item.active { background: white; color: var(--nkangala-blue); border-top: 3px solid var(--nkangala-blue); }
+
+        /* --- SCREENS --- */
+        .screen { display: none; height: 100%; overflow: hidden; }
+        .active-screen { display: flex; }
+
+        /* --- LOGIN SCREEN --- */
+        #login-screen { flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; }
+        .login-card { background: white; padding: 35px; border-radius: 15px; border: 1px solid #eee; width: 100%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .login-card input, .login-card select, .login-card textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        
+        /* --- LESSON SCREEN LAYOUT --- */
+        #lesson-screen { flex-direction: row; }
+        .sidebar { width: 320px; background: #fdfdfd; border-right: 1px solid #eee; padding: 25px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background: #fff; }
+        
+        .tracker-card { background: white; border: 1px solid #eef; padding: 15px; border-radius: 10px; font-size: 14px; }
+        .badge-pill { background: #fff3cd; color: #856404; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; margin: 2px; display: inline-block; border: 1px solid #ffeeba; }
+
+        /* --- CHAT BUBBLES --- */
+        .chat-window { flex-grow: 1; padding: 25px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 14px 18px; border-radius: 18px; max-width: 80%; line-height: 1.5; font-size: 15px; animation: slideUp 0.3s ease; }
+        .thuto-msg { background: #e3f2fd; color: #0d47a1; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .user-msg { background: #e8f5e9; color: #1b5e20; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+        /* --- TUTOR SCREEN --- */
+        #tutor-screen { padding: 40px; overflow-y: auto; flex-wrap: wrap; gap: 25px; align-content: flex-start; }
+        .tutor-card { background: white; border: 1px solid #eee; border-radius: 15px; width: 300px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; border-top: 5px solid var(--nkangala-blue); }
+
+        /* --- QUIZ UI --- */
+        .quiz-box { background: white; border: 2px solid var(--nkangala-blue); padding: 15px; border-radius: 12px; margin-top: 10px; }
+        .opt-btn { display: block; width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; text-align: left; }
+        .opt-btn:hover { background: #e3f2fd; border-color: var(--nkangala-blue); }
+
+        /* --- CONTROLS --- */
+        .input-zone { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 12px; background: white; }
+        .input-zone input { flex-grow: 1; padding: 14px; border: 1px solid #ddd; border-radius: 10px; outline: none; }
+        .btn { padding: 12px 24px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-blue { background: var(--nkangala-blue); color: white; }
+        .btn-green { background: var(--xp-green); color: white; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <div>
+            <h2 style="margin:0">Thuto Assistant 📚</h2>
+            <small id="rank-name">Nkangala TVET Student</small>
+        </div>
+        <div class="xp-container">
+            <strong id="xp-text">0 XP</strong>
+            <div class="xp-bar-bg"><div id="xp-fill" class="xp-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <div class="nav-bar" id="main-nav">
+        <div class="nav-item active" id="tab-lesson" onclick="switchTab('lesson')">Interactive Lesson</div>
+        <div class="nav-item" id="tab-tutors" onclick="switchTab('tutors')">Find a Campus Tutor</div>
+    </div>
+
+    <div id="login-screen" class="screen active-screen">
+        <div class="login-card">
+            <h2>Welcome back!</h2>
+            <p>Ready to level up your grades at Nkangala?</p>
+            <input type="text" id="nameInput" placeholder="Enter your name">
+            <select id="subSelect">
+                <option value="">Select Subject Focus...</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Electrical">Electrical Trade Theory</option>
+                <option value="Accounting">Financial Accounting</option>
+            </select>
+            <textarea id="struggleInput" placeholder="What specific concept is hard today?"></textarea>
+            <button class="btn btn-blue" style="width:100%" onclick="launchApp()">Start Study Session</button>
+        </div>
+    </div>
+
+    <div id="lesson-screen" class="screen">
+        <div class="sidebar">
+            <div class="tracker-card">
+                <h3>📋 Session Goals</h3>
+                <div id="goal-list">
+                    <div><input type="checkbox" id="chk-1" disabled> Logged In</div>
+                    <div><input type="checkbox" id="chk-2" disabled> Database Search</div>
+                    <div><input type="checkbox" id="chk-3" disabled> Quiz Master</div>
+                </div>
+            </div>
+            <div class="tracker-card">
+                <h3>🏅 Achievements</h3>
+                <div id="badge-case"><span class="badge-pill">First Step</span></div>
+            </div>
+            <div class="tracker-card" style="text-align: center;">
+                <h3>📈 Accuracy</h3>
+                <div style="font-size: 32px; font-weight: bold; color: var(--xp-green);" id="score-val">0</div>
+                <small>Questions Correct</small>
+            </div>
+            <button class="btn" style="background:#eee; color:#666;" onclick="location.reload()">End Session</button>
+        </div>
+
+        <div class="chat-area">
+            <div class="chat-window" id="chatWindow"></div>
+            <div class="input-zone">
+                <button class="btn btn-green" onclick="startQuiz()">Quick Quiz</button>
+                <input type="text" id="userInput" placeholder="Ask Thuto anything (e.g., 'What is Ohm's Law?')..." onkeypress="if(event.key==='Enter') sendChat()">
+                <button class="btn btn-blue" onclick="sendChat()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tutor-screen" class="screen"></div>
+</div>
+
+<script>
+    // --- ENHANCED DATABASE ---
+    const knowledgeBase = {
+        "Mathematics": {
+            intro: "Maths at Nkangala covers Algebra, Trig, and Calculus.",
+            definitions: {
+                "derivative": "The derivative measures the sensitivity to change of a function value with respect to a change in its argument.",
+                "calculus": "Calculus is the mathematical study of continuous change.",
+                "algebra": "Algebra uses symbols and letters to represent numbers and quantities in equations."
+            },
+            faqs: {
+                "how to study": "The best way to study Math is practice! Try to solve at least 5 problems from previous exam papers every day.",
+                "exam tips": "Always show your steps. Even if the final answer is wrong, you can earn marks for the correct method!"
+            },
+            quizzes: [{q: "What is 15% of 200?", a: "30", o: ["20","30","40","15"]}, {q: "Solve for x: 3x = 12", a: "4", o: ["3","4","6","12"]}]
+        },
+        "Electrical": {
+            intro: "Electrical Trade Theory focuses on Ohm's Law and circuitry.",
+            definitions: {
+                "ohm's law": "Ohm's Law states that V = I × R (Voltage = Current × Resistance).",
+                "voltage": "Voltage is the pressure from an electrical circuit's power source that pushes electrons.",
+                "resistance": "Resistance is a measure of the opposition to current flow in an electrical circuit."
+            },
+            faqs: {
+                "safety": "Always remember PPE: Wear your safety boots, goggles, and ensure the power is locked out before working.",
+                "pass rate": "To pass Electrical Trade Theory, focus heavily on Circuit Diagrams and Safety Regulations."
+            },
+            quizzes: [{q: "Unit of Current?", a: "Ampere", o: ["Volt","Watt","Ohm","Ampere"]}]
+        },
+        "Accounting": {
+            intro: "Financial Accounting follows Assets = Liabilities + Equity.",
+            definitions: {
+                "asset": "An asset is a resource with economic value that an individual or corporation owns.",
+                "liability": "A liability is something a person or company owes, usually a sum of money.",
+                "equity": "Equity represents the amount of money that would be returned to a company’s shareholders."
+            },
+            faqs: {
+                "double entry": "Every transaction must have a debit and a credit. If your trial balance doesn't balance, check your entries!",
+                "ledger": "The General Ledger is the 'master' set of accounts where all transactions are recorded."
+            },
+            quizzes: [{q: "Is Cash an Asset or Liability?", a: "Asset", o: ["Asset","Liability","Equity","Expense"]}]
+        }
+    };
+
+    const tutorList = [
+        {name: "Mr. Sipho M.", campus: "eMalahleni", subject: "Maths & Physics", rate: "⭐ 4.9"},
+        {name: "Ms. Lerato K.", campus: "Middelburg", subject: "Accounting", rate: "⭐ 5.0"},
+        {name: "Mr. David Z.", campus: "KwaMhlanga", subject: "Electrical Trade", rate: "⭐ 4.8"},
+        {name: "Ms. Nomvula S.", campus: "Siyabuswa", subject: "Business Studies", rate: "⭐ 4.7"}
+    ];
+
+    let state = { name: "", subject: "", xp: 0, correct: 0, badges: ["First Step"] };
+
+    // --- CORE FUNCTIONS ---
+
+    function launchApp() {
+        state.name = document.getElementById('nameInput').value || "Scholar";
+        state.subject = document.getElementById('subSelect').value;
+        if(!state.subject) { alert("Please select a subject focus!"); return; }
+
+        document.getElementById('login-screen').classList.remove('active-screen');
+        document.getElementById('main-nav').style.display = 'flex';
+        document.getElementById('lesson-screen').classList.add('active-screen');
+        document.getElementById('chk-1').checked = true;
+        
+        addMsg("thuto", `Helele **${state.name}**! I'm Thuto. I'm ready to help with **${state.subject}**. Ask me a question or try a quiz!`);
+        loadTutors();
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        if(tab === 'lesson') {
+            document.getElementById('lesson-screen').classList.add('active-screen');
+            document.getElementById('tab-lesson').classList.add('active');
+        } else {
+            document.getElementById('tutor-screen').classList.add('active-screen');
+            document.getElementById('tab-tutors').classList.add('active');
+        }
+    }
+
+    function sendChat() {
+        const input = document.getElementById('userInput');
+        const val = input.value.trim();
+        if(!val) return;
+        addMsg("user", val);
+        input.value = "";
+        setTimeout(() => { processResponse(val); }, 800);
+    }
+
+    // --- IMPROVED AI QUESTION LOGIC ---
+    function processResponse(text) {
+        const lowerText = text.toLowerCase();
+        const currentData = knowledgeBase[state.subject];
+        let reply = "";
+
+        // 1. Search for Definitions
+        let foundDef = Object.keys(currentData.definitions).find(key => lowerText.includes(key));
+        
+        // 2. Search for FAQs
+        let foundFaq = Object.keys(currentData.faqs).find(key => lowerText.includes(key));
+
+        if (foundDef) {
+            reply = `Great question! Here is the definition: **${currentData.definitions[foundDef]}**`;
+            updateXP(10);
+            document.getElementById('chk-2').checked = true;
+        } 
+        else if (foundFaq) {
+            reply = `I can help with that! **${currentData.faqs[foundFaq]}**`;
+            updateXP(10);
+            document.getElementById('chk-2').checked = true;
+        }
+        else if (text.length > 50) {
+            reply = "I love the detail in your explanation! Teaching back what you know is a top-tier study method. **+20 XP**!";
+            updateXP(20);
+            awardBadge("Expert Explainer");
+        }
+        else if (lowerText.includes("who are you") || lowerText.includes("what is thuto")) {
+            reply = "I am Thuto, your Nkangala TVET study companion. I'm here to help you pass your modules!";
+        }
+        else {
+            reply = `I'm still learning about that specific topic. Try asking me about **${Object.keys(currentData.definitions).join(", ")}** or click 'Quick Quiz'!`;
+        }
+
+        addMsg("thuto", reply);
+    }
+
+    function startQuiz() {
+        const data = knowledgeBase[state.subject] || knowledgeBase["Mathematics"];
+        const q = data.quizzes[Math.floor(Math.random() * data.quizzes.length)];
+        let html = `**Quiz Challenge!**<br>${q.q}<div class="quiz-box">`;
+        q.o.forEach(opt => { html += `<button class="opt-btn" onclick="checkAns('${opt}', '${q.a}')">${opt}</button>`; });
+        html += `</div>`;
+        addMsg("thuto", html);
+    }
+
+    function checkAns(choice, correct) {
+        if(choice === correct) {
+            addMsg("thuto", "✅ **Correct!** You've earned +15 XP.");
+            state.correct++;
+            updateXP(15);
+            document.getElementById('score-val').innerText = state.correct;
+            document.getElementById('chk-3').checked = true;
+            if(state.correct === 3) awardBadge("Quiz Master");
+        } else {
+            addMsg("thuto", `❌ Not quite. The correct answer was **${correct}**.`);
+        }
+    }
+
+    function loadTutors() {
+        const container = document.getElementById('tutor-screen');
+        container.innerHTML = tutorList.map(t => `
+            <div class="tutor-card">
+                <h3>${t.name}</h3>
+                <p>📍 Campus: ${t.campus}</p>
+                <div class="badge-pill" style="background:#e3f2fd; color:#0d47a1">${t.subject}</div>
+                <div style="margin-top:10px;">${t.rate}</div>
+                <button class="btn btn-blue" style="width:100%; margin-top:15px;" onclick="alert('Connecting...')">Request Chat</button>
+            </div>
+        `).join('');
+    }
+
+    function addMsg(sender, text) {
+        const win = document.getElementById('chatWindow');
+        const d = document.createElement('div');
+        d.className = `msg ${sender}-msg`;
+        d.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        win.appendChild(d);
+        win.scrollTop = win.scrollHeight;
+    }
+
+    function updateXP(amt) {
+        state.xp += amt;
+        document.getElementById('xp-text').innerText = `${state.xp} XP`;
+        document.getElementById('xp-fill').style.width = Math.min((state.xp / 1000) * 100, 100) + "%";
+        if(state.xp >= 100) document.getElementById('rank-name').innerText = "Dedicated Learner";
+        if(state.xp >= 300) { document.getElementById('rank-name').innerText = "Nkangala Scholar"; awardBadge("Rising Star"); }
+    }
+
+    function awardBadge(name) {
+        if(state.badges.includes(name)) return;
+        state.badges.push(name);
+        document.getElementById('badge-case').innerHTML += `<span class="badge-pill">${name}</span>`;
+    }
+</script>
+</body>
+</html>
