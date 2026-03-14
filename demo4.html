@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thuto - Nkangala TVET Academic Support</title>
+    <style>
+        :root {
+            --nkangala-blue: #0056b3;
+            --nkangala-gold: #ffca28;
+            --xp-green: #28a745;
+            --bg-gray: #f4f7f9;
+            --text-dark: #333;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-gray); margin: 0; display: flex; justify-content: center; padding: 20px; color: var(--text-dark); }
+        .app-container { background: white; width: 100%; max-width: 1100px; height: 850px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header & Gamification Bar */
+        .header { background-color: var(--nkangala-blue); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid var(--nkangala-gold); }
+        .user-rank { text-align: right; }
+        .xp-bar-container { width: 250px; background: rgba(255,255,255,0.2); height: 12px; border-radius: 6px; margin-top: 5px; overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
+        .xp-bar-fill { background: var(--nkangala-gold); height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        /* Screen Management */
+        .screen { display: none; height: 100%; }
+        .active-screen { display: flex; }
+
+        /* Login Screen */
+        #login-screen { flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; }
+        .login-card { background: white; padding: 30px; border-radius: 12px; border: 1px solid #eee; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 450px; }
+        .login-card input, .login-card select, .login-card textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+
+        /* Main Lesson Layout */
+        #lesson-screen { flex-direction: row; gap: 0; }
+        .sidebar { width: 320px; background: #fdfdfd; border-right: 1px solid #eee; padding: 25px; display: flex; flex-direction: column; gap: 25px; overflow-y: auto; }
+        .lesson-area { flex-grow: 1; display: flex; flex-direction: column; background: #fff; }
+
+        /* Sidebar UI */
+        .tracker-box { background: #fff; border: 1px solid #eef0f2; padding: 15px; border-radius: 10px; }
+        .tracker-box h3 { margin-top: 0; font-size: 16px; color: var(--nkangala-blue); border-bottom: 2px solid var(--bg-gray); padding-bottom: 8px; }
+        .check-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 14px; }
+        .badge-pill { background: #fff3cd; color: #856404; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin: 3px; display: inline-block; border: 1px solid #ffeeba; }
+
+        /* Chat UI */
+        .chat-window { flex-grow: 1; padding: 30px; overflow-y: auto; background: #fafafa; display: flex; flex-direction: column; gap: 18px; }
+        .msg { padding: 14px 18px; border-radius: 18px; max-width: 75%; line-height: 1.5; font-size: 15px; animation: fadeIn 0.3s ease; }
+        .thuto-msg { background: #e3f2fd; color: #0d47a1; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 2px 2px 5px rgba(0,0,0,0.02); }
+        .user-msg { background: #e8f5e9; color: #1b5e20; align-self: flex-end; border-bottom-right-radius: 2px; }
+        
+        /* Quiz Styles */
+        .quiz-card { background: white; border: 2px solid var(--nkangala-blue); padding: 15px; border-radius: 10px; margin-top: 10px; }
+        .q-opt { display: block; width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; text-align: left; transition: 0.2s; }
+        .q-opt:hover { background: #e3f2fd; border-color: var(--nkangala-blue); }
+
+        /* Controls */
+        .input-area { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 12px; background: white; }
+        .input-area input { flex-grow: 1; padding: 14px; border: 1px solid #ddd; border-radius: 10px; outline: none; }
+        .btn { padding: 12px 24px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-blue { background: var(--nkangala-blue); color: white; }
+        .btn-green { background: var(--xp-green); color: white; }
+        .typing { font-size: 12px; color: #999; margin-left: 30px; display: none; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <div>
+            <h2 style="margin:0">Thuto 📚</h2>
+            <small id="current-rank">Beginner Student</small>
+        </div>
+        <div class="user-rank">
+            <strong id="xp-display">0 XP</strong>
+            <div class="xp-bar-container"><div id="xp-fill" class="xp-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <div id="login-screen" class="screen active-screen">
+        <h1>Helele! I'm Thuto.</h1>
+        <p>Your academic support buddy for Nkangala TVET College.</p>
+        <div class="login-card">
+            <input type="text" id="nameInput" placeholder="Enter your first name">
+            <select id="progSelect">
+                <option value="">Select your programme...</option>
+                <option value="NCV Level 2-4">NCV (Levels 2 - 4)</option>
+                <option value="Report 191 N1-N3">Engineering N1 - N3</option>
+                <option value="Report 191 N4-N6">Business/Engineering N4 - N6</option>
+            </select>
+            <select id="subSelect">
+                <option value="">Select focus subject...</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Electrical">Electrical Trade Theory</option>
+                <option value="Accounting">Financial Accounting</option>
+                <option value="Business">Business Management</option>
+            </select>
+            <textarea id="struggleInput" placeholder="What are you struggling with today?"></textarea>
+            <button class="btn btn-blue" style="width:100%" onclick="initSession()">Start Learning Session</button>
+        </div>
+    </div>
+
+    <div id="lesson-screen" class="screen">
+        <div class="sidebar">
+            <div class="tracker-box">
+                <h3>📊 Session Progress</h3>
+                <div class="check-item"><input type="checkbox" id="chk-intro" disabled> Topic Introduction</div>
+                <div class="check-item"><input type="checkbox" id="chk-db" disabled> Database Search</div>
+                <div class="check-item"><input type="checkbox" id="chk-quiz" disabled> Quiz Completed</div>
+                <div class="check-item"><input type="checkbox" id="chk-teach" disabled> Teach-Back Done</div>
+            </div>
+
+            <div class="tracker-box">
+                <h3>🏆 Your Badges</h3>
+                <div id="badge-container">
+                    <span class="badge-pill">🏅 First Step</span>
+                </div>
+            </div>
+
+            <div class="tracker-box" style="text-align: center;">
+                <h3>📈 Session Stats</h3>
+                <div style="font-size: 24px; font-weight: bold; color: var(--xp-green);" id="stat-correct">0</div>
+                <div style="font-size: 12px; color: #666;">Correct Answers</div>
+            </div>
+            
+            <button class="btn btn-blue" style="background:#f1f1f1; color:#333;" onclick="location.reload()">End Session</button>
+        </div>
+
+        <div class="lesson-area">
+            <div class="chat-window" id="chatWindow">
+                </div>
+            <div id="typing-indicator" class="typing">Thuto is thinking...</div>
+            
+            <div class="input-area">
+                <button class="btn btn-green" onclick="triggerQuiz()">📝 Quiz</button>
+                <input type="text" id="userInput" placeholder="Ask a question or explain what you learned..." onkeypress="if(event.key==='Enter') handleSend()">
+                <button class="btn btn-blue" onclick="handleSend()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- KNOWLEDGE DATABASE ---
+    const knowledgeBase = {
+        "Mathematics": {
+            info: "Mathematics at Nkangala covers Algebra, Trig, and Calculus. Key success factor: showing your steps!",
+            questions: [
+                { q: "Solve for x: 2x + 5 = 15", a: "5", opts: ["10", "5", "7.5", "2"] },
+                { q: "What is the square root of 144?", a: "12", opts: ["14", "10", "12", "16"] }
+            ]
+        },
+        "Electrical": {
+            info: "Electrical Trade Theory focuses on Ohm's Law, circuitry, and safety regulations.",
+            questions: [
+                { q: "Unit of Electrical Power?", a: "Watt", opts: ["Volt", "Ampere", "Ohm", "Watt"] },
+                { q: "Device used to protect a circuit from overload?", a: "Circuit Breaker", opts: ["Resistor", "Switch", "Circuit Breaker", "Battery"] }
+            ]
+        },
+        "Accounting": {
+            info: "Financial Accounting relies on the principle: Assets = Liabilities + Equity.",
+            questions: [
+                { q: "Which side of the T-Account is Credit?", a: "Right", opts: ["Left", "Right", "Top", "Bottom"] },
+                { q: "Is 'Salaries' an Asset or Expense?", a: "Expense", opts: ["Asset", "Liability", "Expense", "Income"] }
+            ]
+        }
+    };
+
+    let session = {
+        name: "", subject: "", xp: 0, correct: 0, 
+        badges: ["First Step"], steps: []
+    };
+
+    // --- LOGIC FUNCTIONS ---
+
+    function initSession() {
+        session.name = document.getElementById('nameInput').value || "Scholar";
+        session.subject = document.getElementById('subSelect').value || "General Studies";
+
+        if(!document.getElementById('subSelect').value) { alert("Please select a subject!"); return; }
+
+        document.getElementById('login-screen').classList.remove('active-screen');
+        document.getElementById('lesson-screen').classList.add('active-screen');
+
+        addMsg("thuto", `Helele, **${session.name}**! 🇿🇦 I'm Thuto. I see you're working on **${session.subject}**. I've pulled the Nkangala database for you. What would you like to cover first?`);
+        markStep('chk-intro');
+    }
+
+    function handleSend() {
+        const input = document.getElementById('userInput');
+        const text = input.value.trim();
+        if(!text) return;
+
+        addMsg("user", text);
+        input.value = "";
+        
+        showTyping(true);
+        setTimeout(() => {
+            showTyping(false);
+            processResponse(text);
+        }, 1200);
+    }
+
+    function processResponse(text) {
+        const lowerText = text.toLowerCase();
+        let reply = "";
+
+        // Teach-back recognition
+        if (text.length > 40) {
+            reply = "That is an excellent explanation! Teaching it back is the best way to learn. **+30 XP earned!**";
+            updateXP(30);
+            markStep('chk-teach');
+            awardBadge("Teach-Back Champion");
+        } 
+        // Database search
+        else if (lowerText.includes("help") || lowerText.includes("what is")) {
+            const data = knowledgeBase[session.subject];
+            reply = `Searching Nkangala records... 📂 Here is a tip for ${session.subject}: ${data.info}`;
+            markStep('chk-db');
+            updateXP(5);
+        }
+        else {
+            reply = "I hear you! Let's keep pushing. Would you like to try a **Quiz** to test your knowledge?";
+        }
+
+        addMsg("thuto", reply);
+    }
+
+    function triggerQuiz() {
+        const data = knowledgeBase[session.subject] || knowledgeBase["Mathematics"];
+        const qObj = data.questions[Math.floor(Math.random() * data.questions.length)];
+        
+        let html = `**Quiz Time!**<br>${qObj.q}<div class="quiz-card">`;
+        qObj.opts.forEach(opt => {
+            html += `<button class="q-opt" onclick="checkQuizAnswer('${opt}', '${qObj.a}')">${opt}</button>`;
+        });
+        html += `</div>`;
+        
+        addMsg("thuto", html);
+    }
+
+    function checkQuizAnswer(choice, correct) {
+        if(choice === correct) {
+            addMsg("thuto", "✅ **Correct!** You're a natural. +10 XP.");
+            session.correct++;
+            updateXP(10);
+            document.getElementById('stat-correct').innerText = session.correct;
+            markStep('chk-quiz');
+            if(session.correct === 5) awardBadge("Quick Learner");
+        } else {
+            addMsg("thuto", `❌ Not quite! The answer was **${correct}**. Let's review and try again.`);
+        }
+    }
+
+    function addMsg(sender, text) {
+        const win = document.getElementById('chatWindow');
+        const d = document.createElement('div');
+        d.className = `msg ${sender}-msg`;
+        d.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        win.appendChild(d);
+        win.scrollTop = win.scrollHeight;
+    }
+
+    function updateXP(amt) {
+        session.xp += amt;
+        document.getElementById('xp-display').innerText = `${session.xp} XP`;
+        
+        // Progress Bar
+        let percent = (session.xp / 1000) * 100;
+        document.getElementById('xp-fill').style.width = Math.min(percent, 100) + "%";
+
+        // Rank Update
+        let rank = "Beginner Student";
+        if(session.xp >= 100) rank = "Dedicated Learner";
+        if(session.xp >= 300) rank = "Rising Scholar";
+        if(session.xp >= 600) rank = "Academic Star";
+        document.getElementById('current-rank').innerText = rank;
+    }
+
+    function awardBadge(name) {
+        if(session.badges.includes(name)) return;
+        session.badges.push(name);
+        const container = document.getElementById('badge-container');
+        container.innerHTML += `<span class="badge-pill">🏅 ${name}</span>`;
+        addMsg("thuto", `🎊 **NEW BADGE:** You earned the **${name}** badge!`);
+    }
+
+    function markStep(id) {
+        document.getElementById(id).checked = true;
+    }
+
+    function showTyping(show) {
+        document.getElementById('typing-indicator').style.display = show ? 'block' : 'none';
+    }
+</script>
+
+</body>
+</html>

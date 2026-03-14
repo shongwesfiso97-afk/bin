@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thuto - Nkangala TVET Smart Assistant</title>
+    <style>
+        :root {
+            --nkangala-blue: #0056b3;
+            --nkangala-dark: #003d80;
+            --xp-green: #28a745;
+            --bg-gray: #f4f7f9;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-gray); margin: 0; display: flex; justify-content: center; padding: 20px; }
+        .app-container { background: white; width: 100%; max-width: 900px; height: 750px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header */
+        .header { background-color: var(--nkangala-blue); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+        .stats-top { text-align: right; min-width: 150px; }
+        .xp-bar-container { width: 100%; background: rgba(255,255,255,0.3); height: 8px; border-radius: 4px; margin-top: 5px; }
+        .xp-bar-fill { background: #ffca28; height: 100%; width: 5%; border-radius: 4px; transition: width 0.5s; }
+
+        /* Screens */
+        #login-screen { padding: 40px; }
+        #lesson-screen { display: none; flex-grow: 1; padding: 20px; gap: 20px; overflow: hidden; }
+
+        .layout-grid { display: grid; grid-template-columns: 280px 1fr; gap: 20px; height: 100%; width: 100%; }
+
+        /* Sidebar */
+        .tracker-sidebar { background: #f8f9fa; border-radius: 10px; padding: 20px; border: 1px solid #e9ecef; display: flex; flex-direction: column; gap: 15px; }
+        .tracker-item { font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .badge-pill { display: inline-block; background: #fff3cd; padding: 4px 10px; border-radius: 20px; font-size: 12px; margin-top: 5px; font-weight: bold; color: #856404; }
+
+        /* Chat Area */
+        .lesson-main { display: flex; flex-direction: column; border: 1px solid #e9ecef; border-radius: 10px; background: #fff; overflow: hidden; }
+        .chat-window { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #fafafa; }
+        
+        .message { padding: 12px 16px; border-radius: 15px; max-width: 80%; line-height: 1.5; }
+        .thuto-msg { background: #e3f2fd; color: #0d47a1; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .user-msg { background: #e8f5e9; color: #1b5e20; align-self: flex-end; border-bottom-right-radius: 2px; }
+        
+        .db-info-card { background: white; border-left: 4px solid var(--nkangala-blue); padding: 10px; margin-top: 10px; font-size: 13px; color: #333; }
+
+        /* Input Controls */
+        .input-area { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; background: white; }
+        input[type="text"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-send { background: var(--nkangala-blue); color: white; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <div>
+            <h1 style="margin:0">Thuto 📚</h1>
+            <span id="display-level">Beginner Student</span>
+        </div>
+        <div class="stats-top">
+            <div id="display-xp">0 XP</div>
+            <div class="xp-bar-container"><div id="xp-fill" class="xp-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <div id="login-screen">
+        <h2>Welcome to Nkangala Academic Support</h2>
+        <form id="profileForm">
+            <input type="text" id="nameInput" placeholder="Your Name" required>
+            <input type="text" id="subInput" placeholder="Enter Subject (e.g. Mathematics, Engineering, Accounting)" required>
+            <button type="submit" class="btn-send" style="width: 100%; margin-top: 10px;">Access Database & Learn</button>
+        </form>
+    </div>
+
+    <div id="lesson-screen">
+        <div class="layout-grid">
+            <div class="tracker-sidebar">
+                <h3>Session Tracker</h3>
+                <div class="tracker-item"><strong>Student:</strong> <span id="track-name"></span></div>
+                <div class="tracker-item"><strong>Subject:</strong> <span id="track-sub"></span></div>
+                <div class="tracker-item"><strong>Database Status:</strong> <span style="color:green">● Connected</span></div>
+                <div class="tracker-item">
+                    <strong>Badges:</strong><br>
+                    <span class="badge-pill">🏅 First Step</span>
+                </div>
+            </div>
+
+            <div class="lesson-main">
+                <div class="chat-window" id="chatWindow"></div>
+                <div id="typing-indicator" style="display:none; padding: 10px; font-style: italic; font-size: 12px;">Thuto is searching the database...</div>
+
+                <div class="input-area">
+                    <input type="text" id="userInput" placeholder="Ask about a subject or concept...">
+                    <button class="btn-send" onclick="sendMessage()">Ask Thuto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- FREE INTERNAL DATABASE ---
+    const subjectDatabase = {
+        "mathematics": {
+            desc: "Focuses on Algebra, Trigonometry, and Calculus. Essential for Engineering and Business.",
+            tip: "Practice past papers from the DHET website!",
+            topics: ["Integration", "Derivatives", "Complex Numbers"]
+        },
+        "engineering": {
+            desc: "Covers N1-N6 levels. Includes Electrical Trade Theory, Motor Trade Theory, and Civil Engineering.",
+            tip: "Focus on your drawings; they carry a lot of marks in the exams!",
+            topics: ["Ohm's Law", "Circuit Diagrams", "Mechanotechnology"]
+        },
+        "accounting": {
+            desc: "Covers Financial Accounting (N4-N6) and NCV Finance.",
+            tip: "Double-check your General Ledger entries—balance is key!",
+            topics: ["Income Statements", "Balance Sheets", "Cash Flow"]
+        },
+        "hospitality": {
+            desc: "Focuses on Food Preparation, Client Services, and Hospitality Services.",
+            tip: "Practical assessments (PATs) are just as important as the theory exam!",
+            topics: ["Hygiene", "Menu Planning", "Customer Relations"]
+        }
+    };
+
+    let currentXP = 0;
+    let studentName = "";
+
+    document.getElementById('profileForm').onsubmit = (e) => {
+        e.preventDefault();
+        studentName = document.getElementById('nameInput').value;
+        const sub = document.getElementById('subInput').value;
+
+        document.getElementById('track-name').innerText = studentName;
+        document.getElementById('track-sub').innerText = sub;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('lesson-screen').style.display = 'flex';
+
+        addMessage("thuto", `Helele ${studentName}! I have connected to the Nkangala Subject Database. Ask me anything about your subjects!`);
+    };
+
+    function sendMessage() {
+        const input = document.getElementById('userInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        addMessage("user", text);
+        input.value = '';
+        
+        document.getElementById('typing-indicator').style.display = 'block';
+
+        setTimeout(() => {
+            document.getElementById('typing-indicator').style.display = 'none';
+            handleDatabaseSearch(text);
+        }, 1000);
+    }
+
+    function handleDatabaseSearch(query) {
+        const q = query.toLowerCase();
+        let found = false;
+        let response = "";
+
+        // Loop through database keys
+        for (let key in subjectDatabase) {
+            if (q.includes(key)) {
+                const data = subjectDatabase[key];
+                response = `I found some information on <strong>${key.toUpperCase()}</strong> in our database: <div class="db-info-card">${data.desc}<br><br><strong>Top Tip:</strong> ${data.tip}</div>Would you like to earn 10 XP by explaining what you've learned so far?`;
+                updateXP(15); // Bonus for using the database
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            response = "I couldn't find that specific subject in my database yet, but don't worry! Tell me more about it and I'll help you break it down manually.";
+        }
+
+        addMessage("thuto", response);
+    }
+
+    function addMessage(sender, text) {
+        const chat = document.getElementById('chatWindow');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender}-msg`;
+        msgDiv.innerHTML = text;
+        chat.appendChild(msgDiv);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function updateXP(amount) {
+        currentXP += amount;
+        document.getElementById('display-xp').innerText = `${currentXP} XP`;
+        document.getElementById('xp-fill').style.width = Math.min((currentXP / 1000) * 100, 100) + '%';
+        if(currentXP >= 100) document.getElementById('display-level').innerText = "Dedicated Learner";
+    }
+</script>
+
+</body>
+</html>

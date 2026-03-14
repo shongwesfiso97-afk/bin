@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thuto - Interactive AI Lesson</title>
+    <style>
+        :root {
+            --nkangala-blue: #0056b3;
+            --nkangala-dark: #003d80;
+            --xp-green: #28a745;
+            --bg-gray: #f4f7f9;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-gray); margin: 0; display: flex; justify-content: center; padding: 20px; }
+        .app-container { background: white; width: 100%; max-width: 900px; height: 700px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Header */
+        .header { background-color: var(--nkangala-blue); color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; }
+        .stats-top { text-align: right; min-width: 150px; }
+        .xp-bar-container { width: 100%; background: rgba(255,255,255,0.3); height: 8px; border-radius: 4px; margin-top: 5px; }
+        .xp-bar-fill { background: #ffca28; height: 100%; width: 5%; border-radius: 4px; transition: width 0.5s; }
+
+        /* Screens */
+        #login-screen { padding: 40px; }
+        #lesson-screen { display: none; flex-grow: 1; padding: 20px; gap: 20px; overflow: hidden; }
+
+        .layout-grid { display: grid; grid-template-columns: 280px 1fr; gap: 20px; height: 100%; width: 100%; }
+
+        /* Sidebar */
+        .tracker-sidebar { background: #f8f9fa; border-radius: 10px; padding: 20px; border: 1px solid #e9ecef; display: flex; flex-direction: column; gap: 15px; }
+        .tracker-item { font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .badge-pill { display: inline-block; background: #fff3cd; padding: 4px 10px; border-radius: 20px; font-size: 12px; margin-top: 5px; font-weight: bold; color: #856404; }
+
+        /* Chat Area */
+        .lesson-main { display: flex; flex-direction: column; border: 1px solid #e9ecef; border-radius: 10px; background: #fff; overflow: hidden; }
+        .chat-window { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; background: #fafafa; }
+        
+        .message { padding: 12px 16px; border-radius: 15px; max-width: 80%; line-height: 1.5; position: relative; }
+        .thuto-msg { background: #e3f2fd; color: #0d47a1; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .user-msg { background: #e8f5e9; color: #1b5e20; align-self: flex-end; border-bottom-right-radius: 2px; }
+        
+        .typing { font-style: italic; color: #999; font-size: 12px; display: none; }
+
+        /* Input Controls */
+        .controls-top { padding: 10px; border-bottom: 1px solid #eee; display: flex; gap: 10px; overflow-x: auto; }
+        .input-area { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; background: white; }
+        
+        input[type="text"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; }
+        button { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; }
+        .btn-send { background: var(--nkangala-blue); color: white; }
+        .btn-activity { background: #f0f0f0; color: #333; font-size: 12px; }
+        .btn-activity:hover { background: #e0e0e0; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <div>
+            <h1 style="margin:0">Thuto 📚</h1>
+            <span id="display-level">Beginner Student</span>
+        </div>
+        <div class="stats-top">
+            <div id="display-xp">0 XP</div>
+            <div class="xp-bar-container"><div id="xp-fill" class="xp-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <div id="login-screen">
+        <h2>Welcome to Nkangala Academic Support</h2>
+        <p>Tell me a bit about your studies today:</p>
+        <form id="profileForm">
+            <input type="text" id="nameInput" placeholder="Your Name" required>
+            <input type="text" id="progInput" placeholder="Programme (e.g. N5 Marketing)" required>
+            <input type="text" id="subInput" placeholder="Subject (e.g. Sales Management)" required>
+            <textarea id="struggleInput" placeholder="What part is giving you trouble?"></textarea>
+            <button type="submit" class="btn-send" style="width: 100%; margin-top: 10px;">Start Learning</button>
+        </form>
+    </div>
+
+    <div id="lesson-screen">
+        <div class="layout-grid">
+            <div class="tracker-sidebar">
+                <h3>Session Tracker</h3>
+                <div class="tracker-item"><strong>Student:</strong> <span id="track-name"></span></div>
+                <div class="tracker-item"><strong>Subject:</strong> <span id="track-sub"></span></div>
+                <div class="tracker-item">
+                    <strong>Badges:</strong><br>
+                    <span class="badge-pill">🏅 First Step</span>
+                </div>
+                <button class="btn-activity" style="background: #ffebee; color: #c62828;" onclick="location.reload()">End Session</button>
+            </div>
+
+            <div class="lesson-main">
+                <div class="controls-top">
+                    <button class="btn-activity" onclick="triggerActivity('Quiz')">📝 Quick Quiz</button>
+                    <button class="btn-activity" onclick="triggerActivity('Teach-Back')">🗣️ Teach Thuto</button>
+                    <button class="btn-activity" onclick="triggerActivity('Summary')">📋 Summary</button>
+                </div>
+
+                <div class="chat-window" id="chatWindow">
+                    </div>
+                
+                <div id="typing-indicator" class="typing" style="padding-left: 20px; padding-bottom: 5px;">Thuto is thinking...</div>
+
+                <div class="input-area">
+                    <input type="text" id="userInput" placeholder="Ask Thuto a question..." onkeypress="handleKeyPress(event)">
+                    <button class="btn-send" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentXP = 0;
+    let studentData = {};
+
+    document.getElementById('profileForm').onsubmit = (e) => {
+        e.preventDefault();
+        studentData = {
+            name: document.getElementById('nameInput').value,
+            subject: document.getElementById('subInput').value
+        };
+
+        document.getElementById('track-name').innerText = studentData.name;
+        document.getElementById('track-sub').innerText = studentData.subject;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('lesson-screen').style.display = 'flex';
+
+        addMessage("thuto", `Hi ${studentData.name}! I'm ready to help with ${studentData.subject}. What's on your mind? You can ask a question or pick an activity above!`);
+    };
+
+    function handleKeyPress(e) {
+        if (e.key === 'Enter') sendMessage();
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('userInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        addMessage("user", text);
+        input.value = '';
+        
+        // Show typing indicator
+        document.getElementById('typing-indicator').style.display = 'block';
+
+        // Simulate AI Response
+        setTimeout(() => {
+            document.getElementById('typing-indicator').style.display = 'none';
+            generateAIResponse(text);
+        }, 1500);
+    }
+
+    function generateAIResponse(query) {
+        let response = "";
+        const q = query.toLowerCase();
+
+        if (q.includes("hello") || q.includes("hi")) {
+            response = "Helele! How can I help you with your studies right now?";
+        } else if (q.includes("exam") || q.includes("test")) {
+            response = "Tests can be stressful, but you've got this! Let's review the most important parts of the module together. Want a mock quiz?";
+        } else if (q.includes("thank")) {
+            response = "Pleasure is mine! Keep pushing, your hard work at Nkangala will pay off! +5 XP for the positive attitude.";
+            updateXP(5);
+        } else {
+            response = `That's a great question about ${studentData.subject}. While I'm still learning, I recommend checking your textbook for that specific detail, or we can try to break down the basic concept together here. Should we try an 'Explain It To Me' session? (+30 XP)`;
+        }
+
+        addMessage("thuto", response);
+    }
+
+    function triggerActivity(type) {
+        addMessage("thuto", `Starting ${type} mode! This is a great way to earn XP. Ready?`);
+        if(type === 'Teach-Back') updateXP(10);
+    }
+
+    function addMessage(sender, text) {
+        const chat = document.getElementById('chatWindow');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender}-msg`;
+        msgDiv.innerText = text;
+        chat.appendChild(msgDiv);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    function updateXP(amount) {
+        currentXP += amount;
+        document.getElementById('display-xp').innerText = `${currentXP} XP`;
+        
+        let percent = (currentXP / 1000) * 100;
+        document.getElementById('xp-fill').style.width = (percent + 5) + '%';
+
+        if (currentXP > 50) document.getElementById('display-level').innerText = "Dedicated Learner";
+    }
+</script>
+
+</body>
+</html>
